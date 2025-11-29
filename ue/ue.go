@@ -679,7 +679,10 @@ func (u *Ue) waitForRanMessage(ctx context.Context, wg *sync.WaitGroup) {
 			case constant.UE_TUNNEL_UPDATE:
 				go u.updateDataPlane()
 			default:
-				u.RanLog.Warnf("Received unknown message from RAN: %+v", buffer[:n])
+				// 嘗試處理 NAS 訊息 (例如 PDU Session Release Command)
+				if !u.tryHandleNasMessage(buffer[:n]) {
+					u.RanLog.Warnf("Received unknown message from RAN: %+v", buffer[:n])
+				}
 			}
 		}
 	}
@@ -908,4 +911,98 @@ func (u *Ue) isNrdcEnabled() bool {
 	defer u.rwLock.RUnlock()
 
 	return u.nrdc.enable
+}
+
+// tryHandleNasMessage 嘗試處理 NAS 訊息，返回是否成功處理
+func (u *Ue) tryHandleNasMessage(data []byte) bool {
+	if len(data) < 3 {
+		return false
+	}
+
+	// 檢查 Security Header Type
+	// data[0] = Extended Protocol Discriminator (0x7e for 5GMM)
+	// data[1] = Security Header Type
+	epd := data[0]
+	securityHeaderType := data[1] & 0x0f
+
+	// 如果是 5GMM 訊息且有安全頭，需要解密
+	if epd == 0x7e && securityHeaderType != nas.SecurityHeaderTypePlainNas {
+		u.NasLog.Debugf("Received secured NAS message, security header type: %d", securityHeaderType)
+		msg, err := nasDecode(u, securityHeaderType, data)
+		if err != nil {
+			u.NasLog.Warnf("Failed to decode secured NAS message: %v", err)
+			return false
+		}
+		return u.handleDecodedNasMessage(msg)
+	}
+
+	// Plain NAS 訊息 (5GMM 或 5GSM)
+	if epd == 0x7e || epd == 0x2e {
+		msg := new(nas.Message)
+		if err := msg.PlainNasDecode(&data); err != nil {
+			return false
+		}
+		return u.handleDecodedNasMessage(msg)
+	}
+
+	return false
+}
+
+// handleDecodedNasMessage 處理解碼後的 NAS 訊息
+func (u *Ue) handleDecodedNasMessage(msg *nas.Message) bool {
+	if msg == nil {
+		return false
+	}
+
+	// 處理 5GSM 訊息
+	if msg.GsmMessage != nil {
+		switch msg.GsmMessage.GetMessageType() {
+		case nas.MsgTypePDUSessionReleaseCommand:
+			u.NasLog.Infof("Received PDU Session Release Command")
+			u.handlePduSessionReleaseCommand(msg)
+			return true
+		}
+	}
+
+	// 處理 5GMM 訊息
+	if msg.GmmMessage != nil {
+		switch msg.GmmMessage.GetMessageType() {
+		case nas.MsgTypeDLNASTransport:
+			// DL NAS Transport 可能包含 5GSM 訊息
+			if msg.GmmMessage.DLNASTransport != nil {
+				payload := msg.GmmMessage.DLNASTransport.PayloadContainer.GetPayloadContainerContents()
+				if len(payload) > 0 {
+					innerMsg := new(nas.Message)
+					if err := innerMsg.PlainNasDecode(&payload); err == nil {
+						return u.handleDecodedNasMessage(innerMsg)
+					}
+				}
+			}
+			return true
+		}
+	}
+
+	return false
+}
+
+// handlePduSessionReleaseCommand 處理 PDU Session Release Command
+func (u *Ue) handlePduSessionReleaseCommand(msg *nas.Message) {
+	u.NasLog.Infoln("Processing PDU Session Release Command - closing TUN interface")
+
+	// 關閉 TUN 介面
+	if u.ueTunnelDevice != nil {
+		if err := u.ueTunnelDevice.Close(); err != nil {
+			u.TunLog.Errorf("Error closing TUN interface: %v", err)
+		} else {
+			u.TunLog.Infoln("TUN interface closed due to PDU Session Release")
+		}
+		u.ueTunnelDevice = nil
+	}
+
+	// 刪除 TUN 介面
+	if err := bringDownUeTunnelDevice(u.ueTunnelDeviceName); err != nil {
+		u.TunLog.Warnf("Error bringing down TUN device: %v", err)
+	}
+
+	u.NasLog.Infoln("PDU Session Released by network")
 }

@@ -563,7 +563,7 @@ func buildPDUSessionResourceModifyIndication(amfUeNgapId, ranUeNgapId int64, pdu
 	initiatingMessage := pdu.InitiatingMessage
 	initiatingMessage.ProcedureCode.Value = ngapType.ProcedureCodePDUSessionResourceModifyIndication
 	initiatingMessage.Criticality.Value = ngapType.CriticalityPresentReject
-	
+
 	initiatingMessage.Value.Present = ngapType.InitiatingMessagePresentPDUSessionResourceModifyIndication
 	initiatingMessage.Value.PDUSessionResourceModifyIndication = new(ngapType.PDUSessionResourceModifyIndication)
 
@@ -609,4 +609,65 @@ func buildPDUSessionResourceModifyIndication(amfUeNgapId, ranUeNgapId int64, pdu
 func getPDUSessionResourceModifyIndication(amfUeNgapId, ranUeNgapId int64, pduSessionId int64, pduSessionResourceModifyIndicationTransferMessage []byte) ([]byte, error) {
 	pduSessionResourceModifyIndication := buildPDUSessionResourceModifyIndication(amfUeNgapId, ranUeNgapId, pduSessionId, pduSessionResourceModifyIndicationTransferMessage)
 	return ngap.Encoder(pduSessionResourceModifyIndication)
+}
+
+// ===== PDU Session Resource Release Response =====
+
+func buildPduSessionResourceReleaseResponse(amfUeNgapId, ranUeNgapId int64, pduSessionList []int64) ngapType.NGAPPDU {
+	pdu := ngapType.NGAPPDU{}
+
+	pdu.Present = ngapType.NGAPPDUPresentSuccessfulOutcome
+	pdu.SuccessfulOutcome = new(ngapType.SuccessfulOutcome)
+
+	successfulOutcome := pdu.SuccessfulOutcome
+	successfulOutcome.ProcedureCode.Value = ngapType.ProcedureCodePDUSessionResourceRelease
+	successfulOutcome.Criticality.Value = ngapType.CriticalityPresentReject
+
+	successfulOutcome.Value.Present = ngapType.SuccessfulOutcomePresentPDUSessionResourceReleaseResponse
+	successfulOutcome.Value.PDUSessionResourceReleaseResponse = new(ngapType.PDUSessionResourceReleaseResponse)
+
+	pDUSessionResourceReleaseResponse := successfulOutcome.Value.PDUSessionResourceReleaseResponse
+	pDUSessionResourceReleaseResponseIEs := &pDUSessionResourceReleaseResponse.ProtocolIEs
+
+	// AMF UE NGAP ID
+	ie := ngapType.PDUSessionResourceReleaseResponseIEs{}
+	ie.Id.Value = ngapType.ProtocolIEIDAMFUENGAPID
+	ie.Criticality.Value = ngapType.CriticalityPresentIgnore
+	ie.Value.Present = ngapType.PDUSessionResourceReleaseResponseIEsPresentAMFUENGAPID
+	ie.Value.AMFUENGAPID = new(ngapType.AMFUENGAPID)
+	ie.Value.AMFUENGAPID.Value = amfUeNgapId
+	pDUSessionResourceReleaseResponseIEs.List = append(pDUSessionResourceReleaseResponseIEs.List, ie)
+
+	// RAN UE NGAP ID
+	ie = ngapType.PDUSessionResourceReleaseResponseIEs{}
+	ie.Id.Value = ngapType.ProtocolIEIDRANUENGAPID
+	ie.Criticality.Value = ngapType.CriticalityPresentIgnore
+	ie.Value.Present = ngapType.PDUSessionResourceReleaseResponseIEsPresentRANUENGAPID
+	ie.Value.RANUENGAPID = new(ngapType.RANUENGAPID)
+	ie.Value.RANUENGAPID.Value = ranUeNgapId
+	pDUSessionResourceReleaseResponseIEs.List = append(pDUSessionResourceReleaseResponseIEs.List, ie)
+
+	// PDU Session Resource Released List
+	ie = ngapType.PDUSessionResourceReleaseResponseIEs{}
+	ie.Id.Value = ngapType.ProtocolIEIDPDUSessionResourceReleasedListRelRes
+	ie.Criticality.Value = ngapType.CriticalityPresentIgnore
+	ie.Value.Present = ngapType.PDUSessionResourceReleaseResponseIEsPresentPDUSessionResourceReleasedListRelRes
+	ie.Value.PDUSessionResourceReleasedListRelRes = new(ngapType.PDUSessionResourceReleasedListRelRes)
+
+	for _, pduSessionId := range pduSessionList {
+		item := ngapType.PDUSessionResourceReleasedItemRelRes{}
+		item.PDUSessionID.Value = pduSessionId
+		// PDUSessionResourceReleaseResponseTransfer - 空的 transfer
+		item.PDUSessionResourceReleaseResponseTransfer = []byte{0x00}
+		ie.Value.PDUSessionResourceReleasedListRelRes.List = append(
+			ie.Value.PDUSessionResourceReleasedListRelRes.List, item)
+	}
+	pDUSessionResourceReleaseResponseIEs.List = append(pDUSessionResourceReleaseResponseIEs.List, ie)
+
+	return pdu
+}
+
+func getPduSessionResourceReleaseResponse(amfUeNgapId, ranUeNgapId int64, pduSessionList []int64) ([]byte, error) {
+	pduSessionResourceReleaseResponse := buildPduSessionResourceReleaseResponse(amfUeNgapId, ranUeNgapId, pduSessionList)
+	return ngap.Encoder(pduSessionResourceReleaseResponse)
 }

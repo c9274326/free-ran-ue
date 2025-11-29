@@ -66,6 +66,9 @@ func (d *ngapDispatcher) initiatingMessageProcessor(g *Gnb, ngapPdu *ngapType.NG
 	case ngapType.ProcedureCodeUEContextRelease:
 		g.NgapLog.Debugln("Processing NGAP UE Context Release")
 		d.ueContextReleaseProcessor(g, ngapPdu)
+	case ngapType.ProcedureCodePDUSessionResourceRelease:
+		g.NgapLog.Debugln("Processing NGAP PDU Session Resource Release")
+		d.pduSessionResourceReleaseProcessor(g, ngapPdu)
 	default:
 		g.NgapLog.Warnf("Unknown NGAP PDU Initiating Message Procedure Code: %v", ngapPdu.InitiatingMessage.ProcedureCode.Value)
 	}
@@ -322,6 +325,75 @@ func (d *ngapDispatcher) ueContextReleaseProcessor(g *Gnb, ngapPdu *ngapType.NGA
 	g.NgapLog.Debugln("Send ngap ue context release complete message to AMF")
 
 	ranUe.GetUeContextReleaseCompleteChan() <- struct{}{}
+}
+
+func (d *ngapDispatcher) pduSessionResourceReleaseProcessor(g *Gnb, ngapPdu *ngapType.NGAPPDU) {
+	var (
+		amfUeNgapId    int64
+		ranUeNgapId    int64
+		nasPdu         []byte
+		pduSessionList []int64
+	)
+
+	for _, ie := range ngapPdu.InitiatingMessage.Value.PDUSessionResourceReleaseCommand.ProtocolIEs.List {
+		switch ie.Id.Value {
+		case ngapType.ProtocolIEIDAMFUENGAPID:
+			amfUeNgapId = ie.Value.AMFUENGAPID.Value
+		case ngapType.ProtocolIEIDRANUENGAPID:
+			ranUeNgapId = ie.Value.RANUENGAPID.Value
+		case ngapType.ProtocolIEIDNASPDU:
+			if ie.Value.NASPDU != nil {
+				nasPdu = make([]byte, len(ie.Value.NASPDU.Value))
+				copy(nasPdu, ie.Value.NASPDU.Value)
+			}
+		case ngapType.ProtocolIEIDPDUSessionResourceToReleaseListRelCmd:
+			for _, item := range ie.Value.PDUSessionResourceToReleaseListRelCmd.List {
+				pduSessionList = append(pduSessionList, item.PDUSessionID.Value)
+			}
+		}
+	}
+
+	g.NgapLog.Infof("Received PDU Session Resource Release Command for AMF UE NGAP ID: %d, RAN UE NGAP ID: %d, PDU Sessions: %v",
+		amfUeNgapId, ranUeNgapId, pduSessionList)
+
+	ueValue, exist := g.ranUeConns.Load(ranUeNgapId)
+	if !exist {
+		g.NgapLog.Errorf("Error pdu session resource release: Ran UE with ranUeNgapId %d not found", ranUeNgapId)
+		return
+	}
+	ranUe := ueValue.(*RanUe)
+
+	if ranUe.GetAmfUeId() != amfUeNgapId {
+		g.NgapLog.Errorf("Error pdu session resource release: Ran UE with ranUeNgapId %d has amfUeNgapId %d, expected %d",
+			ranUeNgapId, ranUe.GetAmfUeId(), amfUeNgapId)
+		return
+	}
+
+	// 將 NAS PDU (PDU Session Release Command) 轉發給 UE
+	if nasPdu != nil {
+		n, err := ranUe.GetN1Conn().Write(nasPdu)
+		if err != nil {
+			g.NgapLog.Errorf("Error send pdu session release command to UE: %v", err)
+		} else {
+			g.NgapLog.Debugf("Sent %d bytes of PDU Session Release Command to UE %s", n, ranUe.GetMobileIdentityIMSI())
+		}
+	}
+
+	// 建立並發送 PDU Session Resource Release Response
+	pduSessionResourceReleaseResponse, err := getPduSessionResourceReleaseResponse(amfUeNgapId, ranUeNgapId, pduSessionList)
+	if err != nil {
+		g.NgapLog.Errorf("Error get pdu session resource release response: %v", err)
+		return
+	}
+
+	n, err := g.n2Conn.Write(pduSessionResourceReleaseResponse)
+	if err != nil {
+		g.NgapLog.Errorf("Error send pdu session resource release response to AMF: %v", err)
+		return
+	}
+	g.NgapLog.Debugf("Sent %d bytes of PDU Session Resource Release Response to AMF", n)
+	g.NgapLog.Infof("PDU Session Resource Release completed for UE %s, PDU Sessions: %v",
+		ranUe.GetMobileIdentityIMSI(), pduSessionList)
 }
 
 func (d *ngapDispatcher) pduSessionResourceModifyIndicationProcessor(g *Gnb, ngapPdu *ngapType.NGAPPDU, ngapRaw []byte) {
