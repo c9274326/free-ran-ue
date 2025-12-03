@@ -113,7 +113,8 @@ function processRealSessions(realSessions) {
     });
 
     // Update stats based on real sessions
-    stats.totalSessions = sessions.filter(s => s.status === 'active').length;
+    // totalSessions = all existing sessions (active + idle, excluding released)
+    stats.totalSessions = sessions.filter(s => s.status === 'active' || s.status === 'idle').length;
     stats.cleanedSessions = sessions.filter(s => s.status === 'released').length;
     stats.avgIdleTime = sessions.length > 0
         ? Math.floor(sessions.reduce((sum, s) => sum + s.idleTime, 0) / sessions.length)
@@ -429,7 +430,8 @@ function generateMockData() {
     ];
 
     // Update stats
-    stats.totalSessions = sessions.filter(s => s.status === 'active').length;
+    // totalSessions = all existing sessions (active + idle, excluding released)
+    stats.totalSessions = sessions.filter(s => s.status === 'active' || s.status === 'idle').length;
     stats.cleanedSessions = sessions.filter(s => s.status === 'released').length;
     stats.avgIdleTime = Math.floor(sessions.reduce((sum, s) => sum + s.idleTime, 0) / sessions.length);
     stats.successRate = 100;
@@ -559,7 +561,8 @@ function startAutoRefresh() {
                 }
             });
 
-            stats.totalSessions = sessions.filter(s => s.status === 'active').length;
+            // totalSessions = all existing sessions (active + idle, excluding released)
+            stats.totalSessions = sessions.filter(s => s.status === 'active' || s.status === 'idle').length;
             updateDashboard();
         }
     }, 5000); // Refresh every 5 seconds

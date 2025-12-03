@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>5G Fast PDU Session Cleanup - 即時監控系統</title>
-    <meta name="description" content="Free5GC Fast PDU Session Cleanup 與自動重連機制即時監控儀表板">
+    <meta name="description" content="Free5GC Fast PDU Session Cleanup 即時監控儀表板">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- Background Effects -->
     <div class="bg-gradient"></div>
     <div class="grid-overlay"></div>
-    
+
     <!-- Header -->
     <header class="header">
         <div class="container">
@@ -22,9 +26,12 @@
                 <div class="logo-section">
                     <div class="logo-icon">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
                         </svg>
                     </div>
                     <div>
@@ -45,20 +52,19 @@
     <!-- Main Content -->
     <main class="main-content">
         <div class="container">
-            
+
             <!-- Hero Section -->
             <section class="hero-section">
                 <div class="hero-content">
-                    <h2 class="hero-title">智能 PDU Session 生命週期管理</h2>
+                    <h2 class="hero-title">Fast PDU Session Cleanup</h2>
                     <p class="hero-description">
-                        基於流量檢測的自動清理機制，配合網路側釋放與 UE 自動重連，
-                        實現高效的資源管理與無縫連線體驗
+
                     </p>
                     <div class="hero-stats">
                         <div class="stat-card">
                             <div class="stat-icon">⚡</div>
                             <div class="stat-value" id="totalSessions">0</div>
-                            <div class="stat-label">Active Sessions</div>
+                            <div class="stat-label">Existing Sessions</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">🔄</div>
@@ -102,7 +108,8 @@
                             <h3>PDU Sessions</h3>
                             <button class="btn-refresh" onclick="refreshSessions()">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                                    <path
+                                        d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
                                 </svg>
                             </button>
                         </div>
@@ -110,7 +117,7 @@
                             <!-- Sessions will be populated here -->
                         </div>
                     </div>
-                    
+
                     <div class="monitor-card">
                         <div class="card-header">
                             <h3>Cleanup Timeline</h3>
@@ -137,7 +144,7 @@
                             <code>hasActualTraffic(usageReport)</code>
                         </div>
                     </div>
-                    
+
                     <div class="feature-card">
                         <div class="feature-icon">⚙️</div>
                         <h3>可配置的差異化策略</h3>
@@ -146,7 +153,7 @@
                             <code>GetIdleTimeoutForIP(ip)</code>
                         </div>
                     </div>
-                    
+
                     <div class="feature-card">
                         <div class="feature-icon">🔒</div>
                         <h3>安全的 Session 釋放</h3>
@@ -155,15 +162,8 @@
                             <code>NetworkInitiatedRelease()</code>
                         </div>
                     </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">🔄</div>
-                        <h3>UE 自動重連機制</h3>
-                        <p>UE 正確處理網路側釋放訊息，關閉 TUN 介面後自動發起新的 PDU Session 建立請求</p>
-                        <div class="feature-code">
-                            <code>handlePduSessionRelease()</code>
-                        </div>
-                    </div>
+
+
                 </div>
             </section>
 
@@ -180,13 +180,14 @@
                     <div class="flow-controls">
                         <button class="btn-primary" onclick="startFlowAnimation()">
                             <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
+                                <path d="M8 5v14l11-7z" />
                             </svg>
                             播放流程動畫
                         </button>
                         <button class="btn-secondary" onclick="resetFlowAnimation()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                                <path
+                                    d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
                             </svg>
                             重置
                         </button>
@@ -234,7 +235,7 @@
                             </li>
                         </ul>
                     </div>
-                    
+
                     <div class="technical-card">
                         <h3>UE 端實作</h3>
                         <ul class="technical-list">
@@ -302,7 +303,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="result-card">
                         <div class="result-header">
                             <h3>整合測試</h3>
@@ -329,10 +330,7 @@
                                 <span class="scenario-icon">✅</span>
                                 <span>UE TUN 介面正確關閉</span>
                             </div>
-                            <div class="scenario">
-                                <span class="scenario-icon">✅</span>
-                                <span>UE 自動重連成功</span>
-                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -417,4 +415,5 @@ sessions:
 
     <script src="script.js"></script>
 </body>
+
 </html>
