@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5G Fast PDU Session Cleanup - 即時監控系統</title>
+    <meta name="description" content="Free5GC Fast PDU Session Cleanup 與自動重連機制即時監控儀表板">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-gradient"></div>
+    <div class="grid-overlay"></div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="logo-title">5G Fast PDU Session Cleanup</h1>
+                        <p class="logo-subtitle">Intelligent Session Management System</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="status-badge status-active">
+                        <span class="status-dot"></span>
+                        System Active
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Hero Section -->
+            <section class="hero-section">
+                <div class="hero-content">
+                    <h2 class="hero-title">智能 PDU Session 生命週期管理</h2>
+                    <p class="hero-description">
+                        基於流量檢測的自動清理機制，配合網路側釋放與 UE 自動重連，
+                        實現高效的資源管理與無縫連線體驗
+                    </p>
+                    <div class="hero-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-value" id="totalSessions">0</div>
+                            <div class="stat-label">Active Sessions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔄</div>
+                            <div class="stat-value" id="cleanedSessions">0</div>
+                            <div class="stat-label">Cleaned Sessions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value" id="avgIdleTime">0s</div>
+                            <div class="stat-label">Avg Idle Time</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-value" id="successRate">100%</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Architecture Overview -->
+            <section class="architecture-section">
+                <h2 class="section-title">
+                    <span class="title-icon">🏗️</span>
+                    系統架構
+                </h2>
+                <div class="architecture-diagram" id="architectureDiagram">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Live Session Monitor -->
+            <section class="monitor-section">
+                <h2 class="section-title">
+                    <span class="title-icon">📡</span>
+                    即時 Session 監控
+                </h2>
+                <div class="monitor-grid">
+                    <div class="monitor-card">
+                        <div class="card-header">
+                            <h3>PDU Sessions</h3>
+                            <button class="btn-refresh" onclick="refreshSessions()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="sessions-list" id="sessionsList">
+                            <!-- Sessions will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="monitor-card">
+                        <div class="card-header">
+                            <h3>Cleanup Timeline</h3>
+                        </div>
+                        <div class="timeline" id="cleanupTimeline">
+                            <!-- Timeline events will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Feature Showcase -->
+            <section class="features-section">
+                <h2 class="section-title">
+                    <span class="title-icon">✨</span>
+                    核心功能特點
+                </h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>基於流量的閒置檢測</h3>
+                        <p>透過 UPF 的 URR (Usage Reporting Rule) 回報來偵測實際流量，僅在有實際資料傳輸時才更新 LastActiveTime</p>
+                        <div class="feature-code">
+                            <code>hasActualTraffic(usageReport)</code>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">⚙️</div>
+                        <h3>可配置的差異化策略</h3>
+                        <p>支援全域預設超時和基於子網的差異化超時策略，靈活適應不同應用場景</p>
+                        <div class="feature-code">
+                            <code>GetIdleTimeoutForIP(ip)</code>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>安全的 Session 釋放</h3>
+                        <p>透過回調函數機制確保正確的資源清理，包括 PFCP Session、UPF Tunnel、TUN 介面等</p>
+                        <div class="feature-code">
+                            <code>NetworkInitiatedRelease()</code>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>UE 自動重連機制</h3>
+                        <p>UE 正確處理網路側釋放訊息，關閉 TUN 介面後自動發起新的 PDU Session 建立請求</p>
+                        <div class="feature-code">
+                            <code>handlePduSessionRelease()</code>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Message Flow Visualization -->
+            <section class="flow-section">
+                <h2 class="section-title">
+                    <span class="title-icon">🔄</span>
+                    訊息流程視覺化
+                </h2>
+                <div class="flow-container">
+                    <div class="flow-diagram" id="messageFlow">
+                        <!-- Message flow will be animated here -->
+                    </div>
+                    <div class="flow-controls">
+                        <button class="btn-primary" onclick="startFlowAnimation()">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            播放流程動畫
+                        </button>
+                        <button class="btn-secondary" onclick="resetFlowAnimation()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                            </svg>
+                            重置
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technical Details -->
+            <section class="technical-section">
+                <h2 class="section-title">
+                    <span class="title-icon">🔧</span>
+                    技術實作細節
+                </h2>
+                <div class="technical-grid">
+                    <div class="technical-card">
+                        <h3>SMF 端實作</h3>
+                        <ul class="technical-list">
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>session_cleaner.go</strong>
+                                    <p>Session 清理器完整實作，定期掃描閒置 Session</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>cleanup_policy.go</strong>
+                                    <p>清理策略管理，支援子網差異化配置</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>resource_release.go</strong>
+                                    <p>網路發起釋放功能，透過 NGAP 通知 AMF</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>pfcp_reports.go</strong>
+                                    <p>流量檢測函數，分析 URR 回報</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="technical-card">
+                        <h3>UE 端實作</h3>
+                        <ul class="technical-list">
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>ngapDispatcher.go</strong>
+                                    <p>NGAP PDU Session Resource Release 處理器</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>ngapBuilder.go</strong>
+                                    <p>建構 PDU Session Resource Release Response</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>ue.go</strong>
+                                    <p>NAS 訊息解密與 PDU Session Release 處理</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="list-icon">📄</span>
+                                <div>
+                                    <strong>TUN 管理</strong>
+                                    <p>正確關閉 TUN 介面，避免殭屍連線</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Test Results -->
+            <section class="results-section">
+                <h2 class="section-title">
+                    <span class="title-icon">📊</span>
+                    測試結果
+                </h2>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div class="result-header">
+                            <h3>單元測試</h3>
+                            <span class="badge badge-success">PASS</span>
+                        </div>
+                        <div class="result-stats">
+                            <div class="result-stat">
+                                <span class="stat-number">31</span>
+                                <span class="stat-text">總測試數</span>
+                            </div>
+                            <div class="result-stat">
+                                <span class="stat-number">29</span>
+                                <span class="stat-text">通過</span>
+                            </div>
+                            <div class="result-stat">
+                                <span class="stat-number">2</span>
+                                <span class="stat-text">跳過</span>
+                            </div>
+                            <div class="result-stat">
+                                <span class="stat-number">0</span>
+                                <span class="stat-text">失敗</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <div class="result-header">
+                            <h3>整合測試</h3>
+                            <span class="badge badge-success">PASS</span>
+                        </div>
+                        <div class="test-scenarios">
+                            <div class="scenario">
+                                <span class="scenario-icon">✅</span>
+                                <span>PDU Session 建立與 IP 分配</span>
+                            </div>
+                            <div class="scenario">
+                                <span class="scenario-icon">✅</span>
+                                <span>流量活動檢測與 LastActiveTime 更新</span>
+                            </div>
+                            <div class="scenario">
+                                <span class="scenario-icon">✅</span>
+                                <span>閒置超時後自動清理</span>
+                            </div>
+                            <div class="scenario">
+                                <span class="scenario-icon">✅</span>
+                                <span>網路側釋放訊息處理</span>
+                            </div>
+                            <div class="scenario">
+                                <span class="scenario-icon">✅</span>
+                                <span>UE TUN 介面正確關閉</span>
+                            </div>
+                            <div class="scenario">
+                                <span class="scenario-icon">✅</span>
+                                <span>UE 自動重連成功</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuration Example -->
+            <section class="config-section">
+                <h2 class="section-title">
+                    <span class="title-icon">⚙️</span>
+                    配置範例
+                </h2>
+                <div class="config-container">
+                    <div class="config-tabs">
+                        <button class="tab-btn active" onclick="showConfig('smf')">SMF Config</button>
+                        <button class="tab-btn" onclick="showConfig('ue')">UE Config</button>
+                    </div>
+                    <div class="config-content">
+                        <div id="config-smf" class="config-panel active">
+                            <pre><code class="language-yaml"># smfcfg.yaml
+fastCleanup:
+  enabled: true
+  defaultIdleTimeout: 3600  # 1 hour
+  scanInterval: 30          # 30 seconds
+  subnetPolicies:
+    - subnet: "10.60.0"
+      idleTimeout: 60       # 60 seconds for testing
+    - subnet: "10.61.0"
+      idleTimeout: 300      # 5 minutes for production</code></pre>
+                        </div>
+                        <div id="config-ue" class="config-panel">
+                            <pre><code class="language-yaml"># ue1.yaml
+supi: imsi-208930000000001
+mcc: '208'
+mnc: '93'
+key: '8baf473f2f8fd09487cccbd7097c6862'
+op: '8e27b6af0e692e750f32667a3b14605d'
+opType: 'OPC'
+amf: '8000'
+imei: '356938035643803'
+imeiSv: '4370816125816151'
+
+# PDU Session configuration
+sessions:
+  - type: 'IPv4'
+    apn: 'internet'
+    slice:
+      sst: 1
+      sd: '010203'</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>專案資訊</h4>
+                    <p>Free5GC Fast PDU Session Cleanup</p>
+                    <p>智能 5G Session 管理系統</p>
+                </div>
+                <div class="footer-section">
+                    <h4>技術棧</h4>
+                    <p>Free5GC • Free-RAN-UE</p>
+                    <p>Go • NGAP • NAS • PFCP</p>
+                </div>
+                <div class="footer-section">
+                    <h4>文件</h4>
+                    <p>fast_cleanup.md</p>
+                    <p>fix_pdu_release.md</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 CNDI Final Project. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
