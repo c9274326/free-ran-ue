@@ -8,7 +8,7 @@ ue:
   plmnId:
     mcc: "208" # Mobile Country Code
     mnc: "93" # Mobile Network Code
-  msin: "0000000100" # MSIN - Starting at 100 to avoid conflict with slice 1
+  msin: "0000000091" # MSIN - Starting at 100 to avoid conflict with slice 1
 
   authenticationSubscription:
     encPermanentKey: "8baf473f2f8fd09487cccbd7097c6862" # Encrypted Permanent Key
@@ -38,7 +38,7 @@ ue:
   nrdc:
     enable: false # Enable NRDC
 
-  ueTunnelDevice: "ueTun2" # UE Tunnel Device Name - Changed to avoid conflict
+  ueTunnelDevice: "ueTunS" # UE Tunnel Device Name - Slice 2 (avoids conflict with ueTun0-89)
 
 logger:
   level: "info" # error, warn, info, debug, trace
