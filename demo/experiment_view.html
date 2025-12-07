@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #333; }
+        .stat-label { color: #666; font-size: 14px; }
+        #log-container { height: 300px; overflow-y: auto; background: #333; color: #0f0; padding: 10px; font-family: monospace; border-radius: 4px; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Continuous Load Experiment Monitor</h1>
+        
+        <div class="card">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="elapsed-time">0s</div>
+                    <div class="stat-label">Elapsed Time</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="active-ue">0</div>
+                    <div class="stat-label">Active UEs</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="completed-fast">0</div>
+                    <div class="stat-label">Completed Fast</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="completed-slow">0</div>
+                    <div class="stat-label">Completed Slow</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <canvas id="ueChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h3>Event Log</h3>
+            <div id="log-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('ueChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Active UEs',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    stepped: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 12 }
+                },
+                animation: false
+            }
+        });
+
+        function updateLog(events) {
+            const container = document.getElementById('log-container');
+            container.innerHTML = events.map(e => `<div class="log-entry">${e}</div>`).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function fetchData() {
+            try {
+                // 1. Fetch Experiment Status (Runner)
+                const expResponse = await fetch('/experiment/stats');
+                const expData = await expResponse.json();
+                
+                if (expData.status === 'not_started') return;
+
+                document.getElementById('elapsed-time').textContent = Math.round(expData.elapsed) + 's';
+                // document.getElementById('active-ue').textContent = expData.active_ue_count; // OLD: Runner count
+                document.getElementById('completed-fast').textContent = expData.completed_fast;
+                document.getElementById('completed-slow').textContent = expData.completed_slow;
+
+                // 2. Fetch Real SMF Data (5G Core)
+                let realActiveCount = 0;
+                try {
+                    const smfResponse = await fetch('/api/debug/sessions');
+                    if (smfResponse.ok) {
+                        const smfData = await smfResponse.json();
+                        // Count sessions that are actually Active in 5GC
+                        const sessions = smfData.sessions || [];
+                        realActiveCount = sessions.filter(s => s.state === 'Active').length;
+                        
+                        // Optional: Log if mismatch
+                        // console.log(`Runner says: ${expData.active_ue_count}, SMF says: ${realActiveCount}`);
+                    }
+                } catch (e) {
+                    console.warn("Failed to fetch SMF data, falling back to runner count", e);
+                    realActiveCount = expData.active_ue_count;
+                }
+
+                // Update Display with Real Count
+                document.getElementById('active-ue').textContent = realActiveCount;
+
+                // Update Chart
+                // We only have current point. To show history, we need to accumulate or fetch history.
+                // For simplicity, we'll just push the current point.
+                const timeLabel = Math.round(expData.elapsed);
+                
+                // Avoid duplicates
+                if (chart.data.labels.length === 0 || chart.data.labels[chart.data.labels.length - 1] !== timeLabel) {
+                    chart.data.labels.push(timeLabel);
+                    chart.data.datasets[0].data.push(realActiveCount);
+                    
+                    if (chart.data.labels.length > 60) { // Keep last 60 points
+                        chart.data.labels.shift();
+                        chart.data.datasets[0].data.shift();
+                    }
+                    chart.update();
+                }
+
+                updateLog(expData.events);
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        setInterval(fetchData, 1000);
+    </script>
+</body>
+</html>

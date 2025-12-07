@@ -565,7 +565,7 @@ function startAutoRefresh() {
             stats.totalSessions = sessions.filter(s => s.status === 'active' || s.status === 'idle').length;
             updateDashboard();
         }
-    }, 5000); // Refresh every 5 seconds
+    }, 5000); // Refresh every 3 seconds
 }
 
 // ===== Config Tabs =====
